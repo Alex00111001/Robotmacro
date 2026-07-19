@@ -16,6 +16,7 @@ class MacroViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val allMacros = repository.allMacros.asLiveData()
+    val recentLogs = repository.getRecentLogs().asLiveData()
 
     private val _recordingState = MutableLiveData<RecordingState>(RecordingState.Idle)
     val recordingState: LiveData<RecordingState> = _recordingState

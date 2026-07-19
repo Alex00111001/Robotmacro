@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout 
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -131,8 +131,52 @@
                         android:text="0 acciones grabadas"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOverlay"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="Botón flotante"
+                            android:textSize="12sp" />
+                        <View android:layout_width="8dp" android:layout_height="0dp" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnExport"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="Exportar JSON"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnImport"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:text="Importar JSON"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Logs de ejecución"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.robotmacro.app.ui.ExecutionStatsView
+                android:id="@+id/executionStats"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:layout_marginTop="8dp" />
 
             <TextView
                 android:layout_width="wrap_content"

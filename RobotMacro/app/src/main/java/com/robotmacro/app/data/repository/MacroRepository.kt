@@ -47,13 +47,14 @@ class MacroRepository(
     }
 
     fun getLogsForMacro(macroId: String) = logDao.getLogsForMacro(macroId)
+    fun getRecentLogs() = logDao.getRecentLogs()
 
-    private fun MacroEntity.toDomain() = Macro(
+    fun MacroEntity.toDomain() = Macro(
         id = id, name = name, actions = actions,
         trigger = trigger, loopConfig = loopConfig
     )
 
-    private fun Macro.toEntity() = MacroEntity(
+    fun Macro.toEntity() = MacroEntity(
         id = id, name = name, actions = actions,
         trigger = trigger, loopConfig = loopConfig
     )

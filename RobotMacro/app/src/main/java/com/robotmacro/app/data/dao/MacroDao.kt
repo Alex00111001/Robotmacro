@@ -33,6 +33,9 @@ interface ExecutionLogDao {
     @Query("SELECT * FROM execution_logs WHERE macroId = :macroId ORDER BY startedAt DESC")
     fun getLogsForMacro(macroId: String): Flow<List<ExecutionLogEntity>>
 
+    @Query("SELECT * FROM execution_logs ORDER BY startedAt DESC LIMIT 100")
+    fun getRecentLogs(): Flow<List<ExecutionLogEntity>>
+
     @Insert
     suspend fun insertLog(log: ExecutionLogEntity): Long
 
