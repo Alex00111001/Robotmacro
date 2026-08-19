@@ -1,1 +1,24 @@
-Nothing needs to be added to .gitignore since only a source file (index.html) was added without any build artifacts, dependencies, or temporary files.
+```
+# Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Build results
+build/
+app/build/
+
+# Compressed files
+*.zip
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+```
