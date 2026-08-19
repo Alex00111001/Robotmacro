@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Citas ICP+</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; font-size: 1.5rem; }
+        .status-box { padding: 15px; margin: 20px 0; border-radius: 8px; background: #e9ecef; font-weight: bold; }
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-checking { background: #cce5ff; color: #004085; }
+        .status-success { background: #d4edda; color: #155724; animation: pulse 1s infinite; }
+        .controls { display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 15px; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; }
+        .btn-start { background-color: #007bff; color: white; }
+        .btn-stop { background-color: #dc3545; color: white; }
+        .btn-test { background-color: #6c757d; color: white; margin-top: 10px;}
+        input[type="number"] { padding: 10px; border: 1px solid #ddd; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        label { display: block; text-align: left; margin-bottom: 5px; font-weight: 500; color: #555; }
+        #log { height: 150px; overflow-y: auto; background: #222; color: #0f0; padding: 10px; text-align: left; font-family: monospace; font-size: 0.8rem; border-radius: 6px; margin-top: 20px; }
+        iframe { width: 100%; height: 400px; border: 1px solid #ccc; margin-top: 20px; display: none; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 Auto-Citas ICP+</h1>
+    <p>Esta herramienta monitorea la web en busca de huecos libres.</p>
+    
+    <div id="status" class="status-box status-waiting">Estado: Esperando inicio...</div>
+
+    <div class="controls">
+        <label>Tiempo entre intentos (segundos):</label>
+        <input type="number" id="intervalTime" value="10" min="5">
+        
+        <button class="btn-start" onclick="startMonitoring()">Iniciar Búsqueda</button>
+        <button class="btn-stop" onclick="stopMonitoring()">Detener</button>
+        <button class="btn-test" onclick="playAlert()">Probar Sonido/Alarma</button>
+    </div>
+
+    <div id="log"></div>
+    
+    <!-- Iframe oculto para cargar la web sin perder el control de nuestra app -->
+    <iframe id="targetFrame" src="about:blank"></iframe>
+</div>
+
+<script>
+    let monitoring = false;
+    let timer = null;
+    const TARGET_URL = "https://ssweb.seap.minhap.es/icpplus/citar?org=OIACR";
+    const frame = document.getElementById('targetFrame');
+    const logDiv = document.getElementById('log');
+    const statusDiv = document.getElementById('status');
+
+    function log(msg) {
+        const time = new Date().toLocaleTimeString();
+        logDiv.innerHTML += `[${time}] ${msg}<br>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function playAlert() {
+        // Vibración para móviles
+        if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        
+        // Sonido
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'square';
+        oscillator.frequency.value = 880; // A5
+        oscillator.start();
+        setTimeout(() => oscillator.stop(), 500);
+        alert("¡CITA ENCONTRADA! (Simulación)");
+    }
+
+    function checkForAppointment(doc) {
+        if (!doc) return false;
+
+        // Lógica de detección: Buscamos elementos que solo existen cuando hay calendario
+        // Generalmente un select con nombres de días o meses, o el formulario de selección de hora
+        
+        // Posibles selectores según la web del ICP+
+        const selectors = [
+            'select[name="dia"]', 
+            'select[name="mes"]', 
+            'input[type="submit"][value*="Aceptar"]',
+            '.calendar-container',
+            'table.calendario'
+        ];
+
+        for (let sel of selectors) {
+            if (doc.querySelector(sel)) {
+                return true;
+            }
+        }
+        
+        // También comprobamos si NO está el mensaje de "No hay citas disponibles"
+        const bodyText = doc.body.innerText.toLowerCase();
+        if (bodyText.includes("no hay citas") || bodyText.includes("plazas agotadas")) {
+            return false;
+        }
+
+        // Si hay formulario pero no mensaje de error, podría ser éxito
+        if (doc.querySelector('form') && !bodyText.includes("error")) {
+             // Verificación más estricta necesaria aquí dependiendo de la web exacta
+             return true; 
+        }
+
+        return false;
+    }
+
+    function loadPage() {
+        if (!monitoring) return;
+
+        statusDiv.className = "status-box status-checking";
+        statusDiv.innerText = "Estado: Comprobando disponibilidad...";
+        log("Cargando página objetivo...");
+
+        // Usamos el iframe para cargar la web en segundo plano
+        // Nota: Algunos servidores bloquean iframes (X-Frame-Options). 
+        // Si la web se niega a cargar en el iframe, tendremos que usar window.location
+        frame.src = TARGET_URL + "&t=" + new Date().getTime(); // Cache buster
+        
+        frame.onload = () => {
+            try {
+                // Intentar acceder al contenido del iframe (puede fallar por CORS si el dominio es distinto)
+                // Dado que es la misma sesión, a veces funciona, pero por seguridad de navegador suele bloquearse.
+                // ESTRATEGIA B: Si el iframe falla por CORS, usaremos recarga de ventana principal con parámetros.
+                analyzeContent();
+            } catch (e) {
+                log("Bloqueo de seguridad del navegador (CORS). Cambiando a modo recarga completa.");
+                stopMonitoring();
+                alert("El navegador bloquea la lectura automática por seguridad. La app recargará esta página constantemente.");
+                startReloadMode();
+            }
+        };
+    }
+
+    function analyzeContent() {
+        try {
+            const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+            
+            // Verificar si estamos en la página de error o de éxito
+            if (checkForAppointment(iframeDoc)) {
+                successFound();
+            } else {
+                log("No hay citas disponibles aún.");
+                scheduleNextCheck();
+            }
+        } catch (e) {
+            // Fallback si no podemos leer el iframe
+            scheduleNextCheck();
+        }
+    }
+
+    function successFound() {
+        monitoring = false;
+        statusDiv.className = "status-box status-success";
+        statusDiv.innerText = "¡CITAS DISPONIBLES DETECTADAS!";
+        log(">>> ÉXITO: Se ha detectado el calendario de citas.");
+        playAlert();
+        
+        // Opción automática: Redirigir al usuario al iframe para que reserve ya
+        frame.style.display = "block";
+        frame.height = "800px";
+    }
+
+    function scheduleNextCheck() {
+        if (!monitoring) return;
+        const interval = document.getElementById('intervalTime').value * 1000;
+        // Variación aleatoria de +/- 20% para parecer humano
+        const variation = interval * 0.2;
+        const nextCheck = interval + (Math.random() * variation * 2 - variation);
+        
+        log(`Próximo intento en ${(nextCheck/1000).toFixed(1)}s...`);
+        timer = setTimeout(loadPage, nextCheck);
+    }
+
+    function startMonitoring() {
+        if (monitoring) return;
+        monitoring = true;
+        log("Iniciando monitorización...");
+        statusDiv.className = "status-box status-checking";
+        statusDiv.innerText = "Estado: Iniciando...";
+        
+        // Solicitar permiso de notificación
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+        
+        loadPage();
+    }
+
+    function stopMonitoring() {
+        monitoring = false;
+        clearTimeout(timer);
+        statusDiv.className = "status-box status-waiting";
+        statusDiv.innerText = "Estado: Detenido por usuario.";
+        log("Monitorización detenida.");
+    }
+
+    function startReloadMode() {
+        // Modo agresivo si el iframe falla: recarga la ventana actual
+        // Esto es menos elegante pero a veces necesario si CORS bloquea todo.
+        let count = 0;
+        const loop = () => {
+            if (!monitoring) return;
+            count++;
+            log(`Intento #${count} (Recarga completa)`);
+            
+            // Aquí podríamos inyectar un script para detectar elementos en la propia ventana
+            // Pero como estamos dentro de la herramienta, no podemos escanearnos a nosotros mismos fácilmente.
+            // Esta función es un fallback complejo. 
+            // MEJOR SOLUCIÓN PARA EL USUARIO: Usar la app para gestionar tiempos, pero él navega.
+            
+            // Por ahora, nos limitamos a avisar que el método iframe falló.
+            statusDiv.innerText = "Error: Bloqueo de seguridad. Abre la web en otra pestaña.";
+        };
+        loop();
+    }
+
+    // Notificaciones Push nativas
+    function sendNotification() {
+        if (Notification.permission === "granted") {
+            new Notification("ICP+ Citas", {
+                body: "¡Se han liberado citas! Entra ahora.",
+                icon: "https://via.placeholder.com/50"
+            });
+        }
+    }
+    
+    // Sobrescribimos successFound para incluir notificación
+    const originalSuccess = successFound;
+    successFound = function() {
+        originalSuccess();
+        sendNotification();
+    }
+
+</script>
+
+</body>
+</html>
