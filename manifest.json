@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "ICP+ Cita Automática",
+  "version": "1.0",
+  "description": "Automatiza la búsqueda de citas libres en el ICP+ del Ministerio de Hacienda",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://ssweb.seap.minhap.es/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ssweb.seap.minhap.es/icpplus/citar*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

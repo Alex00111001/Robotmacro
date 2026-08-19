@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICP+ Cita Automática</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+    
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .status-card {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff4444;
+      transition: all 0.3s ease;
+    }
+    
+    .status-dot.active {
+      background: #4CAF50;
+      box-shadow: 0 0 10px #4CAF50;
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 10px;
+    }
+    
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #45a049;
+      transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+      background: #ff4444;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #ff3333;
+      transform: translateY(-2px);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .settings-section {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+    
+    .settings-section h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    
+    .setting-item {
+      margin-bottom: 12px;
+    }
+    
+    .setting-item label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 5px;
+      opacity: 0.9;
+    }
+    
+    .setting-item input[type="range"] {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    
+    .setting-item .range-value {
+      font-size: 11px;
+      opacity: 0.8;
+      text-align: right;
+    }
+    
+    .toggle-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .toggle-label {
+      font-size: 12px;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 40px;
+      height: 20px;
+    }
+    
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.3);
+      transition: 0.4s;
+      border-radius: 20px;
+    }
+    
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+      background-color: #4CAF50;
+    }
+    
+    input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+    
+    .info-box {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    
+    .info-box strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    
+    .log-area {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 15px;
+      max-height: 100px;
+      overflow-y: auto;
+      font-size: 10px;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .log-entry {
+      margin-bottom: 3px;
+      opacity: 0.8;
+    }
+    
+    .log-entry.success {
+      color: #4CAF50;
+    }
+    
+    .log-entry.error {
+      color: #ff4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎯 ICP+ Cita Automática</h1>
+    <p>Monitor de citas del Ministerio de Hacienda</p>
+  </div>
+  
+  <div class="status-card">
+    <div class="status-indicator">
+      <span id="statusText">Detenido</span>
+      <div id="statusDot" class="status-dot"></div>
+    </div>
+    <button id="toggleBtn" class="btn btn-primary">Iniciar Monitorización</button>
+  </div>
+  
+  <div class="settings-section">
+    <h3>⚙️ Configuración</h3>
+    
+    <div class="setting-item">
+      <label>Intervalo mínimo (ms): <span id="minValue">2000</span></label>
+      <input type="range" id="minInterval" min="1000" max="5000" value="2000" step="500">
+    </div>
+    
+    <div class="setting-item">
+      <label>Intervalo máximo (ms): <span id="maxValue">8000</span></label>
+      <input type="range" id="maxInterval" min="3000" max="15000" value="8000" step="500">
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">🔊 Sonido de alerta</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="soundToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">📱 Notificaciones</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="notificationToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">🖱️ Clic automático</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="autoClickToggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    
+    <div class="toggle-container">
+      <span class="toggle-label">🔄 Auto-recargar página</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="autoRefreshToggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+  
+  <div class="info-box">
+    <strong>📋 Instrucciones:</strong>
+    1. Abre la página del ICP+ en una pestaña<br>
+    2. Completa los datos hasta llegar al calendario<br>
+    3. Haz clic en "Iniciar Monitorización"<br>
+    4. La extensión buscará huecos automáticamente<br>
+    5. ¡Suena una alerta cuando encuentra cita!
+  </div>
+  
+  <div class="log-area" id="logArea">
+    <div class="log-entry">Sistema listo...</div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
